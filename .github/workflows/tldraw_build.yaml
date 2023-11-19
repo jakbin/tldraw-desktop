@@ -1,0 +1,67 @@
+name: Build tldraw With Pake CLI
+
+on: [push]
+
+jobs:
+  build:
+    permissions: write-all
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Rust for ubuntu-latest
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-musl
+
+      - name: Install dependencies (ubuntu only)
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libwebkit2gtk-4.0-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev gnome-video-effects gnome-video-effects-extra
+          version: 1.1
+
+      - name: Install pake-cli local
+        shell: bash
+        run: |
+          echo "install pake on local"
+          npm install -g pake-cli
+
+      - name: Install dependencies
+        run: |
+          npm install shelljs
+          npm install axios
+      - name: Build with pake-cli
+        run: |
+          pake https://tldraw.com/ --name tldraw --targets deb
+
+      - name: Automatic Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with: 
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: "Latest Build"
+          files: |
+            tldraw.deb
+
+      - name: Rust cache store
+        uses: actions/cache/save@v3
+        if: steps.cache_store.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            node_modules/pake-cli/src-tauri/target/
+          key: ubuntu-latest-cargo-${{ hashFiles('node_modules/pake-cli/src-tauri/Cargo.lock') }}
