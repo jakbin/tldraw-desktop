@@ -1,6 +1,9 @@
 name: Build tldraw With Pake CLI
 
-on: [push]
+on:
+  push:
+    paths:
+      - .github/workflows/tldraw_build.yaml
 
 jobs:
   build:
@@ -36,13 +39,25 @@ jobs:
           echo "install pake on local"
           npm install -g pake-cli
 
+      - name: Rust cache restore
+        uses: actions/cache/restore@v3
+        id: cache_store
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            node_modules/pake-cli/src-tauri/target/
+          key: ubuntu-latest-cargo-${{ hashFiles('node_modules/pake-cli/src-tauri/Cargo.lock') }}
+
       - name: Install dependencies
         run: |
           npm install shelljs
           npm install axios
       - name: Build with pake-cli
         run: |
-          pake https://tldraw.com/ --name tldraw --targets deb
+          pake https://tldraw.com/ --name tldraw --targets deb --icon tldraw.png
 
       - name: Automatic Release
         uses: marvinpinto/action-automatic-releases@latest
