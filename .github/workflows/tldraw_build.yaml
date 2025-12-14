@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - .github/workflows/tldraw_build.yaml
+  workflow_dispatch:
 
 jobs:
   build:
